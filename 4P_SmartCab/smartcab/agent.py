@@ -25,20 +25,6 @@ class LearningAgent(Agent):
         ###########
         # Set any additional class parameters as needed
 
-    def Q(self, state, action):
-        """ Calculate the Q table """
-        #Initialize Q table
-        for state in build_state.state:
-            for action in self.valid_actions:
-                self.Q[state][action] = 0.0
-        #Update Q table: Q[s][a] = Q[s][a] + alpha * (reward/act[a] + gamma * get_maxQ - Q[s][a])
-        for i in range(simulator.run().total_trials):
-            state = start#如何选择starting state??
-            if state != destination:
-                action = choose_action(state)
-                self.Q[state][action] = self.Q[state][action] + alpha * (self.act(env.primary_agent, action) - self.Q[state][action])
-                state = #state_hat如何定义？？
-        return self.Q
 
     def reset(self, destination=None, testing=False):
         """ The reset function is called at the beginning of each trial.
@@ -48,18 +34,17 @@ class LearningAgent(Agent):
         # Select the destination as the new location to route to
         self.planner.route_to(destination)
         
-        if testing == True:
-            self.epsilon = 0
-            self.alpha = 0
-        else:
-            self.epsilon = epsilon - 0.05
-        
         ########### 
         ## TO DO ##
         ###########
         # Update epsilon using a decay function of your choice
         # Update additional class parameters as needed
         # If 'testing' is True, set epsilon and alpha to 0
+        if testing == True:
+            self.epsilon = 0
+            self.alpha = 0
+        else:
+            self.epsilon = self.epsilon - 0.05
 
 
 
@@ -100,7 +85,7 @@ class LearningAgent(Agent):
         ###########
         # Calculate the maximum Q-value of all actions for a given state
 
-        maxQ = None
+        maxQ = max(self.Q[state].values())
 
         return maxQ 
 
@@ -114,13 +99,13 @@ class LearningAgent(Agent):
         # When learning, check if the 'state' is not in the Q-table
         # If it is not, create a new dictionary for that state
         #   Then, for each action available, set the initial Q-value to 0.0
-        if self.learning == True:
-            if state not in self.Q.keys: #May need be to changed!!!!
+        if self.learning:
+            if state not in self.Q.keys():
                 self.Q[state]= dict()
                 for action in self.valid_actions:
                     self.Q[state][action] = 0.0
 
-        return self.Q
+        return
 
 
     def choose_action(self, state):
@@ -130,7 +115,8 @@ class LearningAgent(Agent):
         # Set the agent state and default action
         self.state = state
         self.next_waypoint = self.planner.next_waypoint()
-        action = random.choice(self.valid_actions)
+        
+
 
         ########### 
         ## TO DO ##
@@ -139,6 +125,17 @@ class LearningAgent(Agent):
         # When learning, choose a random action with 'epsilon' probability
         # Otherwise, choose an action with the highest Q-value for the current state
         # Be sure that when choosing an action with highest Q-value that you randomly select between actions that "tie".
+        
+        if not self.learning:
+            action = random.choice(self.valid_actions)
+        else:
+            a_maxQ = []
+            for action in self.Q[state]:
+                if self.Q[state][action] == max(self.Q[state].values()):
+                    a_maxQ.append(action)
+            
+            action = random.choice(a_maxQ)
+
         return action
 
 
@@ -152,6 +149,8 @@ class LearningAgent(Agent):
         ###########
         # When learning, implement the value iteration update rule
         #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
+        if self.learning:
+            self.Q[state][action] = self.Q[state][action] + self.alpha * (reward - self.Q[state][action])
 
         return
 
