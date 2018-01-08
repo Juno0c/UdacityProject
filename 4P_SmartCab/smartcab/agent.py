@@ -70,7 +70,7 @@ class LearningAgent(Agent):
         # With the hand-engineered features, this learning process gets entirely negated.
         
         # Set 'state' as a tuple of relevant data for the agent        
-        state = [waypoint, inputs]
+        state = (waypoint, inputs['light'], inputs['left'], inputs['right'], inputs['oncoming'])
 
         return state
 
@@ -100,10 +100,7 @@ class LearningAgent(Agent):
         # If it is not, create a new dictionary for that state
         #   Then, for each action available, set the initial Q-value to 0.0
         if self.learning:
-            if state not in self.Q.keys():
-                self.Q[state]= dict()
-                for action in self.valid_actions:
-                    self.Q[state][action] = 0.0
+            self.Q[state] = self.Q.get(state, {None:0.0, 'forward':0.0, 'left':0.0, 'right':0.0})
 
         return
 
@@ -129,12 +126,15 @@ class LearningAgent(Agent):
         if not self.learning:
             action = random.choice(self.valid_actions)
         else:
-            a_maxQ = []
-            for action in self.Q[state]:
-                if self.Q[state][action] == max(self.Q[state].values()):
-                    a_maxQ.append(action)
-            
-            action = random.choice(a_maxQ)
+            if self.epsilon > random.random():
+                action = random.choice(self.valid_actions)
+            else:
+                a_maxQ = []
+                for action in self.Q[state]:
+                    if self.Q[state][action] == max(self.Q[state].values()):
+                        a_maxQ.append(action)
+                
+                action = random.choice(a_maxQ)
 
         return action
 
@@ -202,7 +202,7 @@ def run():
     #   display      - set to False to disable the GUI if PyGame is enabled
     #   log_metrics  - set to True to log trial and simulation results to /logs
     #   optimized    - set to True to change the default log file name
-    sim = Simulator(env, update_delay=0.01, log_metrics=True)
+    sim = Simulator(env, update_delay=0.01, log_metrics=True)#, optimized=True)
     
     ##############
     # Run the simulator
